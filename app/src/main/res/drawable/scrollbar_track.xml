@@ -1,4 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <size android:width="4dp" />
-    <solid android:color="#E0E0E0" /> <!-- Light Gray -->
+    <size android:width="8dp" /> <!-- Ensure track width matches thumb width -->
+    <solid android:color="#E0E0E0" /> <!-- Color of the scrollbar track -->
 </shape>
+

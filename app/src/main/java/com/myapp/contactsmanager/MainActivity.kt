@@ -51,16 +51,20 @@ class MainActivity : AppCompatActivity() {
                     RecyclerView.SCROLL_STATE_IDLE -> {
                         // RecyclerView is not scrolling
 
-                        val layoutInflater  = layoutInflater
-                        val customToastView = layoutInflater.inflate(R.layout.custom_toast, null)
-                        val textView:TextView       = customToastView.findViewById(R.id.toast_text_view)
-                        val text:String             =  "Contact: " +visibleItemPosition + " Of " +totalItemCount
-                        textView.text               = text
+                        if(totalItemCount!=0) {
+                            val layoutInflater = layoutInflater
+                            val customToastView =
+                                layoutInflater.inflate(R.layout.custom_toast, null)
+                            val textView: TextView =
+                                customToastView.findViewById(R.id.toast_text_view)
+                            val text: String = "" +visibleItemPosition + " / " + totalItemCount
+                            textView.text = text
 
-                        val toast = Toast(applicationContext)
-                        toast.view = customToastView
-                        toast.duration = Toast.LENGTH_SHORT
-                        toast.show()
+                            val toast = Toast(applicationContext)
+                            toast.view = customToastView
+                            toast.duration = Toast.LENGTH_SHORT
+                            toast.show()
+                        }
                     }
                     RecyclerView.SCROLL_STATE_DRAGGING -> {
                         // RecyclerView is currently being scrolled by the user
