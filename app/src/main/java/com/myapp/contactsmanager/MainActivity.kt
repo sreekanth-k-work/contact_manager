@@ -2,8 +2,13 @@ package com.myapp.contactsmanager
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.util.Log
+import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
@@ -12,6 +17,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.myapp.contactsmanager.ContactAdapter
 import com.myapp.contactsmanager.ContactViewModel
 import com.myapp.contactsmanager.R
@@ -22,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: ContactAdapter
     private val REQUEST_READ_CONTACTS = 67676
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -29,7 +36,55 @@ class MainActivity : AppCompatActivity() {
         val recyclerView            =   findViewById<RecyclerView>(R.id.recyclerView)
         adapter                     =   ContactAdapter()
         recyclerView.adapter        =   adapter
-        recyclerView.layoutManager  =   LinearLayoutManager(this)
+        val layoutManager           = LinearLayoutManager(this) // or any other LayoutManager you are using
+        recyclerView.layoutManager  = layoutManager
+
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+
+            var visibleItemPosition:Int = 0
+            var  totalItemCount:Int     = 0
+
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+
+                when (newState) {
+                    RecyclerView.SCROLL_STATE_IDLE -> {
+                        // RecyclerView is not scrolling
+
+                        val layoutInflater  = layoutInflater
+                        val customToastView = layoutInflater.inflate(R.layout.custom_toast, null)
+                        val textView:TextView       = customToastView.findViewById(R.id.toast_text_view)
+                        val text:String             =  "Contact: " +visibleItemPosition + " Of " +totalItemCount
+                        textView.text               = text
+
+                        val toast = Toast(applicationContext)
+                        toast.view = customToastView
+                        toast.duration = Toast.LENGTH_SHORT
+                        toast.show()
+                    }
+                    RecyclerView.SCROLL_STATE_DRAGGING -> {
+                        // RecyclerView is currently being scrolled by the user
+                    }
+                    RecyclerView.SCROLL_STATE_SETTLING -> {
+                        // RecyclerView is settling after a fling or scroll
+                    }
+                }
+            }
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                // Get the position of the first completely visible item
+                visibleItemPosition =  layoutManager.findFirstCompletelyVisibleItemPosition() + 1 // To make it 1-based index
+
+                totalItemCount      = adapter.itemCount
+
+
+            }
+        })
+
+        // Set custom drawable resources
+        recyclerView.setVerticalScrollbarThumbDrawable(ContextCompat.getDrawable(this, R.drawable.scrollbar_thumb))
+        recyclerView.setVerticalScrollbarTrackDrawable(ContextCompat.getDrawable(this, R.drawable.scrollbar_track))
 
         contactViewModel            =   ViewModelProvider(this).get(ContactViewModel::class.java)
         contactViewModel.allContacts.observe(this, Observer { contacts ->
@@ -69,9 +124,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-
-
 
 
 
