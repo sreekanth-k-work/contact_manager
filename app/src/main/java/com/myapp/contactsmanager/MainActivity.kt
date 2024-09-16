@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -15,27 +17,35 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.myapp.contactsmanager.ContactAdapter
 import com.myapp.contactsmanager.ContactViewModel
 import com.myapp.contactsmanager.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var contactViewModel: ContactViewModel
     private lateinit var adapter: ContactAdapter
     private val REQUEST_READ_CONTACTS = 67676
+    private lateinit var progressBar:ProgressBar
+    private lateinit var recyclerView: RecyclerView
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val recyclerView            =   findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView            =   findViewById<RecyclerView>(R.id.recyclerView)
         adapter                     =   ContactAdapter()
         recyclerView.adapter        =   adapter
+
+        progressBar                 =   findViewById<ProgressBar>(R.id.id_progress_bar)
         val layoutManager           = LinearLayoutManager(this) // or any other LayoutManager you are using
         recyclerView.layoutManager  = layoutManager
 
@@ -141,30 +151,42 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
     private fun fetchContactsFromPhoneBook() {
-        val contacts = mutableListOf<Contact>()
+        // Show progress bar
+        progressBar.visibility = View.VISIBLE
+        recyclerView.visibility = View.GONE
 
-        val contentResolver = contentResolver
-        val cursor = contentResolver.query(
-            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-            null,
-            null,
-            null,
-            null
-        )
+        // Use Coroutine to fetch contacts on background thread
+        lifecycleScope.launch {
+            val contacts = withContext(Dispatchers.IO) {
+                val contactsList = mutableListOf<Contact>()
+                val contentResolver = contentResolver
+                val cursor = contentResolver.query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    null,
+                    null,
+                    null,
+                    null
+                )
 
-        cursor?.use {
-            val nameIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-            val phoneNumberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                cursor?.use {
+                    val nameIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                    val phoneNumberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
 
-            while (it.moveToNext()) {
-                val name = it.getString(nameIndex)
-                val phoneNumber = it.getString(phoneNumberIndex)
-                contacts.add(Contact(name = name, phoneNumber = phoneNumber))
+                    while (it.moveToNext()) {
+                        val name = it.getString(nameIndex)
+                        val phoneNumber = it.getString(phoneNumberIndex)
+                        contactsList.add(Contact(name = name, phoneNumber = phoneNumber))
+                    }
+                }
+                contactsList
             }
-        }
 
-        contacts.forEach { contactViewModel.insert(it) }
+            // Once data is fetched, update the UI on the main thread
+            contacts.forEach { contactViewModel.insert(it) }
+
+            progressBar.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+        }
     }
 }
