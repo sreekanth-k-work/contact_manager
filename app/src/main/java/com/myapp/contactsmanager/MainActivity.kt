@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.ContactsContract
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
@@ -35,6 +36,28 @@ class MainActivity : AppCompatActivity() {
             contacts?.let { adapter.setContacts(it) }
         })
 
+        contactViewModel.filteredContacts.observe(this, Observer { contacts ->
+            contacts?.let { adapter.setContacts(it) }
+        })
+
+
+        val searchView = findViewById<SearchView>(R.id.searchView)
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText != null) {
+                    newText?.let { query ->
+                        contactViewModel.filterContacts(query)
+                    }
+                }
+                return true
+            }
+        })
+
         requestContactsPermission()
     }
 
@@ -46,6 +69,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+
+
+
 
 
     private fun requestContactsPermission() {
